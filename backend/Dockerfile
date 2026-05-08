@@ -43,6 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /install /install
 COPY app ./app
+COPY scripts ./scripts
 
 # Non-root user
 RUN useradd --create-home --shell /bin/bash autox && \
