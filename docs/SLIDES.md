@@ -154,8 +154,8 @@ Self-hosted, zero data leaves the laptop.
 
 | Metric | Value |
 |---|---|
-| Lines of code | ~3,500 |
-| Unit tests | **44 / 44** in 6.2 s |
+| Lines authored | **4,206** (code + docs + sql) |
+| Unit tests | **44 / 44** passing |
 | First-query latency | **2-3 s** end-to-end |
 | Container images | 2 ours + 3 third-party |
 | Commits over 3 days | 13 |

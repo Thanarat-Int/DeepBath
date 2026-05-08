@@ -156,7 +156,8 @@ Curated phrase list (TH + EN) — sub-millisecond match on every turn. Catches t
 | Metric | Value |
 |---|---|
 | Commits over 3 days | **13** |
-| Unit tests | **44 passing** in 6 s |
+| Lines authored (code + docs + sql) | **4,206** |
+| Unit tests | **44 / 44 passing** |
 | End-to-end latency | **2-3 s** (warm cache) |
 | Container images | 2 ours · 3 third-party |
 | Cost to run forever | **0 ฿** (free Typhoon + self-hosted LangFuse) |
