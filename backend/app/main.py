@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.monitoring.langfuse_client import flush as langfuse_flush
 from app.monitoring.langfuse_client import init_langfuse
-from app.routers import chat, health
+from app.routers import chat, health, voice
 
 configure_logging()
 log = get_logger(__name__)
@@ -55,6 +55,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(chat.router)
+    app.include_router(voice.router)
 
     return app
 
