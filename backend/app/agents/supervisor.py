@@ -35,6 +35,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
+from app.agents.mcp_agent import mcp_node as _real_mcp_node
 from app.agents.rag_agent import rag_node as _real_rag_node
 from app.agents.sql_agent import sql_node as _real_sql_node
 from app.agents.state import AgentState, Route
@@ -143,7 +144,8 @@ async def sql_node(state: AgentState) -> dict:
 
 
 async def mcp_node(state: AgentState) -> dict:
-    return await _stub_worker("mcp", state)
+    """Real MCP worker — see app.agents.mcp_agent."""
+    return await _real_mcp_node(state)
 
 
 async def advisor_node(state: AgentState) -> dict:

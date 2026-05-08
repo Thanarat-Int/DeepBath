@@ -1,159 +1,109 @@
-"""Banking MCP server — mock implementations of common banking actions.
+"""DeepBaht Banking MCP server — streamable-HTTP transport.
 
-The Model Context Protocol (MCP) lets any MCP-compatible LLM client (Claude
-Desktop, our LangGraph agent, Cursor, etc.) discover and call these tools
-through a single standard interface.
+The Model Context Protocol (MCP) lets any MCP-compatible LLM client
+(Claude Desktop, our LangGraph agent, Cursor, IDE plugins, …) discover
+and invoke these tools through a single standard interface — write the
+tool once, every client gets it.
 
-Tools exposed (mocked for the demo — no real money is moved):
+Day 1 shipped a stdio-only stub. Day 2 switches to **streamable-HTTP**
+so the FastAPI backend (running in another container) can talk to it
+over the docker network at http://mcp-server:4765/mcp.
+
+Tools exposed (all MOCK — no real money is moved in the demo)
   - get_balance(account_id)
   - get_recent_transactions(account_id, limit)
   - transfer(from_account, to_account, amount, memo)
   - get_market_quote(symbol)
   - get_fx_rate(base, quote)
-
-Day-1 ships placeholders. Day-2 wires them to the same Postgres used by the
-SQL agent so transfers update real seed data.
 """
 
 from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta
-from typing import Any
 
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
-from mcp.types import Tool
+from mcp.server.fastmcp import FastMCP
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ── Server bootstrap ────────────────────────────────────────────────────────
 
-server: Server = Server("deepbaht-banking-mcp")
-
-
-# ─── Tool: get_balance ────────────────────────────────────────────────────────
+mcp: FastMCP = FastMCP(
+    "deepbaht-banking-mcp",
+    host=os.getenv("MCP_HOST", "0.0.0.0"),
+    port=int(os.getenv("MCP_PORT", "4765")),
+)
 
 
-@server.list_tools()
-async def list_tools() -> list[Tool]:
-    return [
-        Tool(
-            name="get_balance",
-            description="Return the current available balance for a given account_id.",
-            inputSchema={
-                "type": "object",
-                "properties": {"account_id": {"type": "string"}},
-                "required": ["account_id"],
-            },
-        ),
-        Tool(
-            name="get_recent_transactions",
-            description="Return up to `limit` most recent transactions for an account.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "account_id": {"type": "string"},
-                    "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10},
-                },
-                "required": ["account_id"],
-            },
-        ),
-        Tool(
-            name="transfer",
-            description=(
-                "Transfer THB between two accounts. Returns a transaction reference. "
-                "All transfers are MOCK in the demo environment."
-            ),
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "from_account": {"type": "string"},
-                    "to_account": {"type": "string"},
-                    "amount": {"type": "number", "minimum": 1},
-                    "memo": {"type": "string"},
-                },
-                "required": ["from_account", "to_account", "amount"],
-            },
-        ),
-        Tool(
-            name="get_market_quote",
-            description="Fetch a (mock) latest market quote for a stock symbol on SET.",
-            inputSchema={
-                "type": "object",
-                "properties": {"symbol": {"type": "string"}},
-                "required": ["symbol"],
-            },
-        ),
-        Tool(
-            name="get_fx_rate",
-            description="Fetch the (mock) FX rate from `base` to `quote` (e.g. THB→USD).",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "base": {"type": "string"},
-                    "quote": {"type": "string"},
-                },
-                "required": ["base", "quote"],
-            },
-        ),
-    ]
+# ── Tools ───────────────────────────────────────────────────────────────────
 
 
-@server.call_tool()
-async def call_tool(name: str, arguments: dict[str, Any]) -> list[dict[str, str]]:
-    """Dispatch tool call. Returns MCP content blocks (text)."""
-    if name == "get_balance":
-        return _ok(f"Account {arguments['account_id']} available balance: 125,430.50 THB")
+@mcp.tool()
+async def get_balance(account_id: str) -> str:
+    """Return the current available balance for a given account_id.
 
-    if name == "get_recent_transactions":
-        limit = int(arguments.get("limit", 5))
-        rows = [
-            f"{(datetime.utcnow() - timedelta(days=i)).date()} · -250.00 THB · ร้านอาหาร"
-            for i in range(limit)
-        ]
-        return _ok("Recent transactions:\n" + "\n".join(rows))
-
-    if name == "transfer":
-        ref = f"TX{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
-        return _ok(
-            f"Transferred {arguments['amount']} THB "
-            f"from {arguments['from_account']} → {arguments['to_account']}. "
-            f"Ref: {ref}  (MOCK)"
-        )
-
-    if name == "get_market_quote":
-        sym = arguments["symbol"].upper()
-        return _ok(f"{sym}: 142.50 THB (+1.43%)  (MOCK)")
-
-    if name == "get_fx_rate":
-        return _ok(f"1 {arguments['base']} = 0.0287 {arguments['quote']}  (MOCK)")
-
-    return _ok(f"Unknown tool: {name}")
-
-
-def _ok(text: str) -> list[dict[str, str]]:
-    return [{"type": "text", "text": text}]
-
-
-# ─── Entrypoint ───────────────────────────────────────────────────────────────
-
-
-async def main() -> None:
-    """Run the MCP server.
-
-    Day-1: stdio transport (works with `mcp dev` and Claude Desktop).
-    Day-2: switch to streamable-HTTP so the FastAPI backend can connect over
-    `MCP_SERVER_URL`.
+    Demo data — production would query the core-banking system.
     """
-    transport = os.getenv("MCP_TRANSPORT", "stdio")
-    if transport == "stdio":
-        async with stdio_server() as (read, write):
-            await server.run(read, write, server.create_initialization_options())
-    else:
-        # Placeholder for the HTTP transport switch on Day 2.
-        raise NotImplementedError(f"Transport '{transport}' not wired yet.")
+    fixtures = {
+        "A1001": "125,430.50",
+        "A1002": "18,200.00",
+        "A2001": "840,000.00",
+        "A3001": "42,500.75",
+    }
+    bal = fixtures.get(account_id, "0.00")
+    return f"บัญชี {account_id} มียอดคงเหลือ {bal} บาท"
 
+
+@mcp.tool()
+async def get_recent_transactions(account_id: str, limit: int = 5) -> str:
+    """Return up to `limit` most recent transactions for an account."""
+    limit = max(1, min(limit, 20))
+    rows = [
+        f"{(datetime.utcnow() - timedelta(days=i)).date()} · -250.00 บาท · ร้านอาหาร"
+        for i in range(limit)
+    ]
+    return f"ธุรกรรมล่าสุดของบัญชี {account_id}:\n" + "\n".join(rows)
+
+
+@mcp.tool()
+async def transfer(
+    from_account: str,
+    to_account: str,
+    amount: float,
+    memo: str = "",
+) -> str:
+    """Transfer THB between two accounts. Returns a transaction reference.
+
+    All transfers are MOCK in the demo environment — no balance is mutated.
+    """
+    if amount <= 0:
+        return "❌ จำนวนเงินต้องมากกว่า 0"
+    ref = f"TX{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    note = f' (บันทึก: "{memo}")' if memo else ""
+    return (
+        f"✅ โอนเงิน {amount:,.2f} บาท จากบัญชี {from_account} → {to_account} "
+        f"เรียบร้อย{note}\nหมายเลขอ้างอิง: {ref}  (MOCK)"
+    )
+
+
+@mcp.tool()
+async def get_market_quote(symbol: str) -> str:
+    """Fetch a (mock) latest market quote for a stock symbol on SET."""
+    sym = symbol.upper().strip()
+    return f"{sym}: 142.50 บาท (+1.43% วันนี้)  (MOCK)"
+
+
+@mcp.tool()
+async def get_fx_rate(base: str, quote: str) -> str:
+    """Fetch the (mock) FX rate from `base` to `quote` (e.g. THB→USD)."""
+    pair = f"{base.upper()}/{quote.upper()}"
+    rates = {"THB/USD": "0.0287", "USD/THB": "34.85", "THB/EUR": "0.0263"}
+    rate = rates.get(pair, "1.0000")
+    return f"อัตราแลกเปลี่ยน {pair}: 1 {base.upper()} = {rate} {quote.upper()}  (MOCK)"
+
+
+# ── Entrypoint ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
+    # `streamable-http` exposes a Starlette app on /mcp with JSON-RPC + SSE.
+    # FastMCP handles connection lifecycle, capability negotiation, and
+    # tool dispatch automatically.
+    mcp.run(transport="streamable-http")
