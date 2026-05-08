@@ -61,6 +61,7 @@ def test_injects_default_limit_when_missing() -> None:
         ("UPDATE accounts SET balance = 0",                        "DML/UPDATE"),
         ("INSERT INTO accounts VALUES ('X', 'C0001', 'savings', 0)", "DML/INSERT"),
         ("DROP TABLE customers",                                   "DDL/DROP"),
+        ("ALTER TABLE customers DROP COLUMN risk_profile",        "DDL/ALTER"),
         ("TRUNCATE transactions",                                  "DDL/TRUNCATE"),
         ("SELECT 1; DROP TABLE customers",                         "multi-statement"),
         ("SELECT * FROM pg_user",                                  "system table"),

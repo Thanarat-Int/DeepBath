@@ -30,6 +30,7 @@ import time
 from typing import Literal
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
@@ -47,8 +48,14 @@ log = get_logger(__name__)
 
 
 class RouteDecision(BaseModel):
-    """Strict schema the supervisor LLM must produce. Keeps the router robust
-    against free-form output by leveraging Typhoon's tool/JSON mode."""
+    """Strict schema the supervisor LLM must produce.
+
+    We use a `PydanticOutputParser` (rather than `with_structured_output`)
+    because Typhoon's OpenAI-compatible API doesn't reliably honour the
+    function-calling / JSON-schema modes that LangChain's helper assumes.
+    PydanticOutputParser injects an explicit JSON schema into the prompt
+    and then validates the raw text reply — model-agnostic and robust.
+    """
 
     route: Literal["rag", "sql", "mcp", "advisor"] = Field(
         ..., description="Which specialist agent should handle this turn."
@@ -56,27 +63,28 @@ class RouteDecision(BaseModel):
     reason: str = Field(..., description="One-sentence justification (Thai or English).")
 
 
+_route_parser = PydanticOutputParser(pydantic_object=RouteDecision)
+
+
+SUPERVISOR_SYSTEM = (
+    "คุณคือ Supervisor ของ DeepBaht ระบบผู้ช่วย Multi-Agent ด้านการเงินส่วนบุคคล\n"
+    "หน้าที่ของคุณคือเลือก agent ที่เหมาะสมที่สุดสำหรับคำถามของลูกค้า โดยมี 4 ทางเลือก:\n"
+    "  - 'rag'      : คำถามเชิงนโยบาย ค่าธรรมเนียม เงื่อนไขผลิตภัณฑ์ (ค้นจากเอกสาร policy)\n"
+    "  - 'sql'      : คำถามเกี่ยวกับธุรกรรม/ยอดเงิน/รายรับ-รายจ่ายของลูกค้า (ค้นจากฐานข้อมูล)\n"
+    "  - 'mcp'      : ลูกค้าต้องการให้ทำ action เช่น โอนเงิน เช็คยอด ดูราคาหุ้น (เรียกผ่าน MCP tools)\n"
+    "  - 'advisor'  : คำถามขอคำแนะนำการลงทุน/วางแผนการเงิน (ต้องใช้ reasoning + tools ผสมกัน)\n\n"
+    "ตอบกลับเป็น JSON ตาม schema ด้านล่างเท่านั้น ห้ามใส่ markdown code-fence "
+    "หรือคำอธิบายใดๆ นอกเหนือจาก JSON object\n\n"
+    "{format_instructions}"
+)
+
+
 SUPERVISOR_PROMPT = ChatPromptTemplate.from_messages(
     [
-        SystemMessage(
-            content=(
-                "คุณคือ Supervisor ของ DeepBaht ระบบผู้ช่วย Multi-Agent "
-                "ด้านการเงินส่วนบุคคล. "
-                "หน้าที่ของคุณคือเลือก agent ที่เหมาะสมที่สุดสำหรับคำถามของลูกค้า:\n"
-                "- 'rag'      : คำถามเชิงนโยบาย ค่าธรรมเนียม เงื่อนไขผลิตภัณฑ์ "
-                "(ค้นจากเอกสาร policy)\n"
-                "- 'sql'      : คำถามเกี่ยวกับธุรกรรม/ยอดเงิน/รายรับ-รายจ่ายของลูกค้า "
-                "(ค้นจากฐานข้อมูล)\n"
-                "- 'mcp'      : ลูกค้าต้องการให้ทำ action เช่น โอนเงิน เช็คยอด ดูราคาหุ้น "
-                "(เรียกผ่าน MCP tools)\n"
-                "- 'advisor'  : คำถามขอคำแนะนำการลงทุน/วางแผนการเงิน "
-                "(ต้องใช้ reasoning + tools ผสมกัน)\n\n"
-                "ตอบเป็น JSON ตาม schema เท่านั้น."
-            )
-        ),
+        ("system", SUPERVISOR_SYSTEM),
         ("human", "คำถามลูกค้า: {message}"),
     ]
-)
+).partial(format_instructions=_route_parser.get_format_instructions())
 
 
 # ─── Nodes ───────────────────────────────────────────────────────────────────
@@ -85,9 +93,15 @@ SUPERVISOR_PROMPT = ChatPromptTemplate.from_messages(
 async def supervisor_node(state: AgentState) -> dict:
     """Classify the user's message and pick the next agent."""
     t0 = time.perf_counter()
-    llm = get_llm("fast").with_structured_output(RouteDecision)
-    chain = SUPERVISOR_PROMPT | llm
-    decision: RouteDecision = await chain.ainvoke({"message": state["user_message"]})
+    llm = get_llm("fast")
+    chain = SUPERVISOR_PROMPT | llm | _route_parser
+    try:
+        decision: RouteDecision = await chain.ainvoke({"message": state["user_message"]})
+    except Exception as exc:  # noqa: BLE001
+        # If the model emits malformed JSON we fall back to RAG — the safest
+        # default for a banking assistant ("look it up in policy").
+        log.warning("supervisor.parse_failed", error=str(exc), default="rag")
+        decision = RouteDecision(route="rag", reason="parse_failed_fallback")
     latency = int((time.perf_counter() - t0) * 1000)
 
     log.info("supervisor.route", route=decision.route, reason=decision.reason)

@@ -82,6 +82,8 @@ def validate(sql: str) -> ValidationResult:
         )
 
     # ── Forbid any DML/DDL/system-tweaks anywhere in the tree ────────────────
+    # Note: sqlglot >=25 renamed `AlterTable` → `Alter` (covers all ALTER
+    # variants). Keep the list explicit so reviewers can audit at a glance.
     for node in tree.walk():
         if isinstance(
             node,
@@ -90,7 +92,7 @@ def validate(sql: str) -> ValidationResult:
                 exp.Update,
                 exp.Delete,
                 exp.Drop,
-                exp.AlterTable,
+                exp.Alter,
                 exp.Create,
                 exp.TruncateTable,
                 exp.Merge,
