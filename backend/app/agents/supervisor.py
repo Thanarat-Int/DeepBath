@@ -40,6 +40,7 @@ from app.agents.sql_agent import sql_node as _real_sql_node
 from app.agents.state import AgentState, Route
 from app.core.llm import get_llm
 from app.core.logging import get_logger
+from app.monitoring.langfuse_client import build_config
 from app.schemas.chat import AgentTrace, ChatMessage, ChatResponse
 
 log = get_logger(__name__)
@@ -211,7 +212,13 @@ async def run_supervisor(
     message: str,
     history: list[ChatMessage],
 ) -> ChatResponse:
-    """Run a single chat turn through the multi-agent graph."""
+    """Run a single chat turn through the multi-agent graph.
+
+    Every call attaches a Langfuse callback (when configured) at the graph
+    level. LangChain propagates the callback through contextvars, so every
+    nested LLM/tool call inside the worker nodes shows up as a child span
+    under the same session trace — no per-node plumbing required.
+    """
     initial: AgentState = {
         "session_id": session_id,
         "user_message": message,
@@ -220,7 +227,8 @@ async def run_supervisor(
         "iteration": 0,
         "traces": [],
     }
-    final: AgentState = await _compiled_graph.ainvoke(initial)
+    config = build_config(session_id=session_id)
+    final: AgentState = await _compiled_graph.ainvoke(initial, config=config)
     return ChatResponse(
         session_id=session_id,
         answer=final.get("final_answer") or "(empty)",

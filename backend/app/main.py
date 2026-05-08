@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
+from app.monitoring.langfuse_client import flush as langfuse_flush
+from app.monitoring.langfuse_client import init_langfuse
 from app.routers import chat, health
 
 configure_logging()
@@ -20,12 +22,18 @@ log = get_logger(__name__)
 async def lifespan(app: FastAPI):  # noqa: ARG001
     """Run startup / shutdown side-effects.
 
-    Day 2 will plug in: Postgres pool ping, LangFuse handshake, MCP probe,
-    Typhoon ASR model warm-up.
+    - **Startup**: initialise the Langfuse global client so the callback
+      handler is ready before the first /chat request.
+    - **Shutdown**: flush pending Langfuse spans so we don't lose the last
+      few traces when the container is recreated.
     """
     log.info("app.startup", version=__version__)
-    yield
-    log.info("app.shutdown")
+    init_langfuse()
+    try:
+        yield
+    finally:
+        langfuse_flush()
+        log.info("app.shutdown")
 
 
 def create_app() -> FastAPI:
