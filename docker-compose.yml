@@ -76,10 +76,10 @@ services:
     build: ./mcp-server
     container_name: deepbaht-mcp
     ports:
-      - "4765:8765"
+      - "4765:4765"
     environment:
       MCP_HOST: 0.0.0.0
-      MCP_PORT: 8765
+      MCP_PORT: 4765
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,13 +89,13 @@ services:
     build: ./backend
     container_name: deepbaht-backend
     ports:
-      - "4000:8000"
+      - "4000:4000"
     env_file:
       - ./backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://deepbaht:deepbaht_dev@postgres:5432/deepbaht
       DATABASE_URL_RO: postgresql+asyncpg://deepbaht_ro:deepbaht_ro_dev@postgres:5432/deepbaht
-      MCP_SERVER_URL: http://mcp-server:8765
+      MCP_SERVER_URL: http://mcp-server:4765
       LANGFUSE_HOST: http://langfuse:3000
     volumes:
       - ./backend:/app
@@ -105,7 +105,7 @@ services:
         condition: service_healthy
       mcp-server:
         condition: service_started
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 4000 --reload
 
   # ---------------------------------------------------------------- Frontend (Day 3)
   # frontend:
@@ -115,6 +115,7 @@ services:
   #     - "4001:3000"
   #   environment:
   #     NEXT_PUBLIC_API_URL: http://localhost:4000
+  #     # frontend container also runs on internal port 4001 (matching host)
   #   depends_on:
   #     - backend
 

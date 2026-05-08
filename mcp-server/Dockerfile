@@ -12,5 +12,5 @@ RUN pip install --upgrade pip && pip install .
 
 COPY src ./src
 
-EXPOSE 8765
+EXPOSE 4765
 CMD ["python", "-m", "src.server"]

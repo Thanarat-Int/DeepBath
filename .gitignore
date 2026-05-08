@@ -31,6 +31,12 @@ pnpm-debug.log*
 *.pem
 *.key
 secrets/
+# Plaintext key dumps the user might create during setup
+API KEYS.txt
+api-keys.txt
+*api*key*.txt
+*KEYS*.txt
+*credentials*
 
 # ─────────────── IDE ───────────────
 .vscode/
