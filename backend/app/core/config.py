@@ -30,10 +30,13 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
     # ── Typhoon (primary LLM) ────────────────────────────────────────────────
+    # Free tier rate limits (per https://docs.opentyphoon.ai/en/rate-limits/):
+    #   chat (30b-a3b)  : 5 RPS / 200 RPM
+    #   fast (12b)      : 5 RPS / 200 RPM
     typhoon_api_key: SecretStr = SecretStr("replace-me")
     typhoon_base_url: str = "https://api.opentyphoon.ai/v1"
-    typhoon_chat_model: str = "typhoon-v2-70b-instruct"
-    typhoon_fast_model: str = "typhoon-v2-8b-instruct"
+    typhoon_chat_model: str = "typhoon-v2.5-30b-a3b-instruct"   # reasoning, advisor
+    typhoon_fast_model: str = "typhoon-v2.1-12b-instruct"        # routing, classification
 
     # ── Fallback (Ollama) ────────────────────────────────────────────────────
     ollama_base_url: str = "http://localhost:11434"
@@ -55,7 +58,10 @@ class Settings(BaseSettings):
     embedding_dim: int = 1024
 
     # ── ASR ──────────────────────────────────────────────────────────────────
-    asr_model: str = "scb10x/typhoon-asr-realtime"
+    # `api`   = call OpenTyphoon (free tier, 100 RPM). `local` = HF transformers.
+    asr_backend: Literal["api", "local"] = "api"
+    asr_model_api: str = "typhoon-asr-realtime"
+    asr_model_local: str = "scb10x/typhoon-asr-realtime"
     asr_device: Literal["cpu", "cuda"] = "cpu"
 
     # ── Safety ───────────────────────────────────────────────────────────────

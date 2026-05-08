@@ -18,7 +18,7 @@ This project is a deliberate, JD-driven demonstration of **end-to-end GenAI engi
 |---|---|
 | End-to-End GenAI | Next.js → FastAPI → LangGraph → Postgres/pgvector → MCP, all containerised |
 | Multi-Agent Orchestration | **LangGraph** supervisor pattern: `Supervisor → {RAG, SQL, MCP, Advisor}` |
-| LLM Strategy | **Typhoon 2** (primary, Thai-native) + Ollama fallback for offline demo |
+| LLM Strategy | **Typhoon v2.5-30b** (chat) + **Typhoon v2.1-12b** (fast routing) — both via free OpenTyphoon API |
 | Context Engineering | **RAG** (LlamaIndex + bge-m3 + pgvector) · **Text-to-SQL** · **MCP** server |
 | Cloud Architecture | Docker Compose for local; deploy-ready for GCP Cloud Run / EKS |
 | Monitoring & Guardrails | **LangFuse** self-hosted tracing · **Guardrails AI** (PII, jailbreak, hallucination) |
