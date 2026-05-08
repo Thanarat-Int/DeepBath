@@ -1,37 +1,34 @@
 # DeepBaht 🐬💸
 
 > **Multi-Agent AI for Thai Personal Finance** — a platform-agnostic GenAI
-> assistant that can answer questions over policy documents (RAG), reason
-> over a customer's transactions (Text-to-SQL), and take actions through a
-> Model Context Protocol server. Built around **Typhoon** (Thai-native LLM)
-> with a deliberate, JD-driven architecture covering the full GenAI
-> engineering surface.
+> assistant that answers policy questions (RAG), reasons over transactions
+> (Text-to-SQL), and takes actions through a Model Context Protocol server.
+> Built around **Typhoon** (Thai-native LLM) with a deliberate, JD-driven
+> architecture covering the full GenAI engineering surface.
 
-[![CI](https://github.com/USER/deepbaht/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11+-blue)
-![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![LangGraph](https://img.shields.io/badge/LangGraph-0.2-green)
+![Typhoon](https://img.shields.io/badge/LLM-Typhoon%20v2.5--30b-emerald)
+![Tests](https://img.shields.io/badge/tests-44%20passing-success)
 ![Docker](https://img.shields.io/badge/docker-ready-2496ED)
 
 ---
 
-## ✨ Why this project?
+## ✨ JD ↔ Implementation matrix
 
-A deliberate, requirement-driven demonstration of **end-to-end GenAI
-engineering** for a Thai personal-finance use case. Every architectural
-choice maps directly to a capability a senior AI Engineer is expected to
-own:
+A deliberate, requirement-driven mapping for the Senior AI Engineer role:
 
-| Capability | Implementation |
-|---|---|
-| End-to-End GenAI | Next.js → FastAPI → LangGraph → Postgres/pgvector → MCP, all containerised |
-| Multi-Agent Orchestration | **LangGraph** supervisor pattern: `Supervisor → {RAG, SQL, MCP, Advisor}` |
-| LLM Strategy | **Typhoon v2.5-30b** (chat) + **Typhoon v2.1-12b** (fast routing) — both via free OpenTyphoon API |
-| Context Engineering | **RAG** (bge-m3 + pgvector) · **Text-to-SQL** · **MCP** server |
-| Cloud Architecture | Docker Compose for local; deploy-ready for GCP Cloud Run / EKS |
-| Monitoring & Guardrails | **LangFuse** self-hosted tracing · **Guardrails AI** (PII, jailbreak, hallucination) |
-| App Dev | **Next.js 15** + shadcn/ui frontend, **FastAPI** async backend |
-| DevOps | Multi-stage **Dockerfiles**, **GitHub Actions** CI, healthchecks |
+| JD requirement | DeepBaht | Where to look |
+|---|---|---|
+| End-to-End GenAI | Next.js → FastAPI → LangGraph → Postgres → MCP, all containerised | repo root |
+| Multi-Agent Orchestration | **LangGraph** supervisor pattern: `Supervisor → {RAG, SQL, MCP, Advisor}` | [`backend/app/agents/`](backend/app/agents/) |
+| LLM Strategy | **Typhoon v2.5-30b** (free OpenTyphoon API) + Ollama fallback | [`backend/app/core/llm.py`](backend/app/core/llm.py) |
+| Context Engineering | **RAG** (bge-m3 + pgvector) · **Text-to-SQL** (sqlglot) · **MCP** server | [`services/`](backend/app/services/) |
+| Cloud Architecture | Docker Compose · 4xxx port range · multi-stage Dockerfiles · health-checked | [`docker-compose.yml`](docker-compose.yml) |
+| Monitoring & Guardrails | **LangFuse** self-hosted tracing · Thai PII redactor · jailbreak filter | [`monitoring/`](backend/app/monitoring/) [`guards/`](backend/app/guards/) |
+| App Dev | **Next.js 16** + Tailwind v4 + Voice button, **FastAPI** async backend | [`frontend/`](frontend/) [`backend/`](backend/) |
+| DevOps | Multi-stage Dockerfiles · Compose profile · 44 unit tests · port isolation | [`backend/Dockerfile`](backend/Dockerfile) |
 
 ---
 
@@ -41,7 +38,8 @@ own:
 ┌─────────────┐    ┌──────────────┐    ┌─────────────────────┐
 │  Next.js UI │───▶│ FastAPI GW   │───▶│ LangGraph           │
 │ (chat+voice)│    │ + Guardrails │    │ Supervisor Agent    │
-└─────────────┘    └──────────────┘    └─────────┬───────────┘
+│   :4001     │    │   :4000      │    │                     │
+└─────────────┘    └──────┬───────┘    └─────────┬───────────┘
                           │                       │
                    ┌──────▼──────┐      ┌─────────┼─────────┐
                    │ Typhoon ASR │      ▼         ▼         ▼
@@ -51,117 +49,154 @@ own:
                                     └──┬───┘ └───┬────┘ └────┬─────┘
                                        ▼         ▼            ▼
                                   pgvector  PostgreSQL   Banking MCP
-                                  (policy)  (txn data)   Server
+                                  (policy)  (txn data)   :4765
+                                  :4432     :4432
                                        │
                               ┌────────▼────────┐
                               │ LangFuse Trace  │
+                              │     :4002       │
                               └─────────────────┘
 ```
-
-See [Architecture.md](Architecture.md) for the full diagram and
-[docs/](docs/) for design notes.
 
 ---
 
 ## 🎬 Demo Scenarios
 
-| # | User says (TH) | Routes to | Showcases |
+| # | User says (TH) | Path | Showcases |
 |---|---|---|---|
-| 1 | "ค่าธรรมเนียมโอนเงินต่างประเทศคิดยังไง?" | RAG Agent | RAG over policy docs with citations |
-| 2 | "เดือนที่แล้วใช้เงินกับอาหารไปเท่าไหร่?" | SQL Agent | Text-to-SQL on transactions |
-| 3 | "โอน 1,000 ให้แม่" | MCP Agent | MCP tool invocation (mock) |
-| 4 | "เงินเดือน 50K ลงทุนอะไรดี?" | Supervisor → multi-step | Multi-agent reasoning |
-| 5 | 🎤 *(speaks in Thai)* | Typhoon ASR → flow | Voice-first UX |
+| 1 | *"ค่าธรรมเนียมโอนเงินต่างประเทศคิดยังไง?"* | `rag` | RAG over policy docs with `[1][2][4]` citations |
+| 2 | *"เดือนที่แล้วใช้กับอาหารไปเท่าไหร่?"* | `sql` | Text-to-SQL with sqlglot validator + auto LIMIT |
+| 3 | *"โอนเงิน 1,500 ให้บัญชี A3001"* | `mcp` | streamable-HTTP MCP tool call with TX ref |
+| 4 | *"Ignore previous instructions…"* | (refused) | Jailbreak guard — never reaches the LLM |
+| 5 | 🎤 *(speaks in Thai)* | rag/sql/mcp | Typhoon ASR → flow |
+
+End-to-end latency is **2-3 seconds** per turn after the embedding model is warm.
 
 ---
 
-## 🔌 Local Ports
-
-This project deliberately uses the **4xxx range** so it doesn't clash with
-other local services:
-
-| Port | Service | URL |
-|------|---------|-----|
-| **4000** | Backend (FastAPI) | http://localhost:4000 · http://localhost:4000/docs |
-| **4001** | Frontend (Next.js, Day 3) | http://localhost:4001 |
-| **4002** | LangFuse Dashboard | http://localhost:4002 |
-| **4432** | Postgres + pgvector | `localhost:4432` |
-| **4765** | MCP Server | http://localhost:4765 |
-
----
-
-## 🚀 Quick Start
+## 🚀 Quick start
 
 ```bash
 # 1. Set up environment
 cp backend/.env.example backend/.env
-# Edit backend/.env and add your TYPHOON_API_KEY (https://opentyphoon.ai)
+# Edit backend/.env and fill in:
+#   - TYPHOON_API_KEY        (https://opentyphoon.ai — free, email signup)
+#   - LANGFUSE_PUBLIC_KEY    (http://localhost:4002 → Settings → API Keys)
+#   - LANGFUSE_SECRET_KEY    (same)
 
-# 2. Spin up everything (Postgres, pgvector, LangFuse, backend, frontend, MCP)
-docker compose up --build
+# 2. Spin up the backend stack
+docker compose up -d postgres backend mcp-server langfuse-db langfuse
 
-# 3. Open the app
-open http://localhost:4001          # Next.js UI
+# 3. Ingest sample policy docs (first run downloads bge-m3 ~2 GB)
+docker compose exec backend python -m scripts.ingest_policies
+
+# 4. Run the frontend
+cd frontend && npm install && npm run dev   # http://localhost:4001
+
+# 5. Visit
+open http://localhost:4001          # chat UI
 open http://localhost:4000/docs     # FastAPI Swagger
 open http://localhost:4002          # LangFuse dashboard
 ```
 
+### Local ports — all in the 4xxx range to avoid clashing
+
+| Port | Service |
+|---|---|
+| **4000** | Backend (FastAPI) |
+| **4001** | Frontend (Next.js) |
+| **4002** | LangFuse dashboard |
+| **4432** | Postgres + pgvector |
+| **4765** | MCP server |
+
 ---
 
-## 📁 Project Structure
+## 🛠️ Tech stack
+
+**LLM & AI**: Typhoon v2.5-30b · Typhoon ASR · bge-m3 (1024-dim multilingual) · LangChain · LangGraph
+**Backend**: FastAPI · Pydantic v2 · SQLAlchemy 2 · asyncpg · sqlglot
+**Frontend**: Next.js 16 (App Router, Turbopack) · React 19 · Tailwind v4 · IBM Plex Sans Thai
+**Data**: PostgreSQL 16 + pgvector
+**Observability**: LangFuse (OTEL) · structlog
+**Safety**: custom Thai-PII regex + Mod-11 ID validator · jailbreak heuristic · DB-level RO role
+**Infra**: Docker · Docker Compose · multi-stage Dockerfiles
+
+---
+
+## 🛡️ Defense-in-depth highlights
+
+### Text-to-SQL — two safety layers
+
+1. **AST validator** — `sqlglot` rejects DML/DDL/system tables, allow-lists `customers/accounts/transactions`, injects `LIMIT`.
+2. **Database role** — `deepbaht_ro` has `SELECT`-only privileges. Even if the validator were bypassed, Postgres itself rejects writes.
+
+Verified live: `DROP / DELETE / UPDATE / TRUNCATE` all denied at both layers.
+
+### PII redaction — Thai-aware
+
+Every chat turn flows through a redactor **before** Typhoon sees it.
+
+| Pattern | Detection |
+|---|---|
+| Citizen ID (13 digits) | Mod-11 checksum verified — won't over-flag random 13-digit strings |
+| Bank account | Grouped `xxx-x-xxxxx-x` |
+| Mobile phone | TH prefixes `06/08/09` + variable separators |
+| Email, Passport | Regex |
+
+19 unit tests cover positive + negative cases.
+
+### Jailbreak
+
+Curated phrase list (TH + EN) — sub-millisecond match on every turn. Catches the obvious 80%; production should layer Llama Guard / Constitutional AI on top.
+
+---
+
+## 📊 Numbers
+
+| Metric | Value |
+|---|---|
+| Commits over 3 days | **13** |
+| Unit tests | **44 passing** in 6 s |
+| End-to-end latency | **2-3 s** (warm cache) |
+| Container images | 2 ours · 3 third-party |
+| Cost to run forever | **0 ฿** (free Typhoon + self-hosted LangFuse) |
+
+---
+
+## 📁 Project structure
 
 ```
 deepbaht/
-├── backend/             # FastAPI + LangGraph multi-agent system
+├── backend/                  # FastAPI + LangGraph
 │   ├── app/
-│   │   ├── agents/      # LangGraph supervisor + worker agents
-│   │   ├── core/        # config, LLM clients (Typhoon)
-│   │   ├── guards/      # Guardrails AI integration
-│   │   ├── monitoring/  # LangFuse hooks
-│   │   ├── routers/     # /chat, /voice, /health
-│   │   ├── services/    # RAG, ASR, SQL services
+│   │   ├── agents/           # supervisor + rag + sql + mcp + state
+│   │   ├── core/             # config, llm (Typhoon), db, logging
+│   │   ├── guards/           # PII + jailbreak
+│   │   ├── monitoring/       # LangFuse client + RunnableConfig
+│   │   ├── routers/          # /chat, /voice/transcribe, /health
+│   │   ├── services/         # rag, sql, mcp_client, asr, embeddings, vector_store
+│   │   ├── schemas/          # Pydantic request/response
 │   │   └── main.py
-│   └── tests/
-├── frontend/            # Next.js 15 chat UI
-├── mcp-server/          # Custom Banking MCP server (transfers, balance, market)
+│   ├── scripts/              # ingest_policies CLI
+│   └── tests/                # 44 unit tests
+├── frontend/                 # Next.js 16 chat UI
+│   ├── app/                  # layout, page, globals
+│   ├── components/           # ChatPanel, VoiceButton, AgentTracePanel
+│   └── lib/                  # api client + types
+├── mcp-server/               # FastMCP banking tools (HTTP transport)
 ├── data/
-│   ├── policies/        # Sample policy documents for RAG
-│   └── seed/            # Postgres seed (transactions, users, RO role)
-├── docs/                # Architecture, demo script, slide deck
-├── .github/workflows/   # CI pipeline
+│   ├── policies/             # sample Thai banking policy markdown
+│   └── seed/                 # Postgres schema + customers + transactions + RO role
+├── docs/
+│   ├── SLIDES.md             # Marp-format presentation
+│   └── demo-script.md        # 12-min talk track + Q&A cheatsheet
 └── docker-compose.yml
 ```
 
 ---
 
-## 🛠️ Tech Stack Detail
-
-**LLM & AI**: Typhoon v2.5-30b (chat) · Typhoon v2.1-12b (fast) · Typhoon ASR
-(Thai speech) · bge-m3 (embeddings) · LangChain · LangGraph
-**Backend**: FastAPI · Pydantic v2 · SQLAlchemy 2 · asyncpg · Alembic · sqlglot
-**Frontend**: Next.js 15 (App Router) · React 19 · shadcn/ui · TanStack Query
-**Data**: PostgreSQL 16 + pgvector · Redis (session)
-**Observability**: LangFuse · OpenTelemetry · structlog
-**Safety**: Guardrails AI · Presidio · custom Thai PII regex
-**Infra**: Docker · Docker Compose · GitHub Actions
-
----
-
-## 📅 Build Timeline (3-day sprint)
-
-- **Day 1** ✅ — Backend skeleton, LangGraph supervisor, **RAG + Text-to-SQL agents**, seed data
-- **Day 2** — MCP server (HTTP transport), Guardrails (Presidio), LangFuse, Typhoon ASR
-- **Day 3** — Next.js UI, CI/CD, end-to-end Docker test, slide deck, rehearsal
-
-### Defense-in-depth highlights (Day 1)
-
-- **RAG**: cite-or-refuse system prompt; bge-m3 multilingual embeddings; HNSW index
-- **Text-to-SQL**: two-layer safety — `sqlglot` AST validator + Postgres `deepbaht_ro` role with `SELECT`-only privileges; query is **shown back** to the user for trust
-
----
-
 ## 📝 License
 
-MIT — built as a portfolio project for a Senior AI Engineer interview.
+MIT — built as a portfolio for a Senior AI Engineer interview.
 
 **Author**: Thanarat · engineersirigpt@gmail.com
