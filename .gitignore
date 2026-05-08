@@ -1,0 +1,62 @@
+# ─────────────── Python ───────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# ─────────────── Node ───────────────
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ─────────────── Env & Secrets ───────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+
+# ─────────────── IDE ───────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ─────────────── Data & Models ───────────────
+data/vectorstore/
+data/uploads/
+data/cache/
+*.sqlite
+*.db
+*.duckdb
+hf_cache/
+models/
+
+# ─────────────── Logs ───────────────
+*.log
+logs/
+
+# ─────────────── LangFuse / Postgres volumes (Docker) ───────────────
+.docker-volumes/
+
+# ─────────────── Misc ───────────────
+.coverage
+htmlcov/
+.tox/

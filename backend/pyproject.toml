@@ -1,0 +1,73 @@
+[project]
+name = "autox-backend"
+version = "0.1.0"
+description = "AutoX-SCB AI · multi-agent backend (FastAPI + LangGraph + Typhoon)"
+requires-python = ">=3.11"
+dependencies = [
+  # ── Web ────────────────────────────────────────
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "python-multipart>=0.0.12",
+
+  # ── DB ────────────────────────────────────────
+  "sqlalchemy[asyncio]>=2.0",
+  "asyncpg>=0.30",
+  "alembic>=1.14",
+  "pgvector>=0.3",
+
+  # ── LLM / Agents ───────────────────────────────
+  "langchain>=0.3",
+  "langchain-core>=0.3",
+  "langchain-community>=0.3",
+  "langchain-openai>=0.2",          # Typhoon uses OpenAI-compatible API
+  "langgraph>=0.2.50",
+  "llama-index-core>=0.12",
+  "llama-index-embeddings-huggingface>=0.4",
+  "llama-index-vector-stores-postgres>=0.3",
+
+  # ── MCP ────────────────────────────────────────
+  "mcp>=1.1",
+
+  # ── ASR ────────────────────────────────────────
+  "transformers>=4.46",
+  "torch>=2.4",
+  "torchaudio>=2.4",
+  "librosa>=0.10",
+  "soundfile>=0.12",
+
+  # ── Observability & Guardrails ─────────────────
+  "langfuse>=2.55",
+  "structlog>=24.4",
+  "presidio-analyzer>=2.2",         # PII detection (lighter than full Guardrails for Day 1)
+  "presidio-anonymizer>=2.2",
+
+  # ── Utils ──────────────────────────────────────
+  "httpx>=0.28",
+  "tenacity>=9.0",
+  "python-dotenv>=1.0",
+  "rich>=13.9",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=6.0",
+  "ruff>=0.8",
+  "mypy>=1.13",
+  "httpx>=0.28",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "ASYNC", "S", "C4", "RET"]
+ignore = ["S101"]  # allow assert in tests
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

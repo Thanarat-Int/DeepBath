@@ -1,0 +1,11 @@
+[project]
+name = "autox-mcp"
+version = "0.1.0"
+description = "AutoX-SCB AI · Banking MCP server (mock transfers, balance, market data)"
+requires-python = ">=3.11"
+dependencies = [
+  "mcp>=1.1",
+  "pydantic>=2.9",
+  "uvicorn[standard]>=0.32",
+  "starlette>=0.41",
+]
