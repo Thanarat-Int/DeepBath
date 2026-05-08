@@ -2,8 +2,8 @@
 -- Categories cover the demo Q&A: "เดือนที่แล้วใช้กับอาหารเท่าไหร่?"
 INSERT INTO transactions (account_id, txn_date, amount, category, merchant, description) VALUES
     -- Salary
-    ('A1002', CURRENT_DATE - INTERVAL '5 days',  50000.00, 'salary',    'SCB Payroll',        'เงินเดือน'),
-    ('A1002', CURRENT_DATE - INTERVAL '35 days', 50000.00, 'salary',    'SCB Payroll',        'เงินเดือน'),
+    ('A1002', CURRENT_DATE - INTERVAL '5 days',  50000.00, 'salary',    'Acme Corp Payroll',        'เงินเดือน'),
+    ('A1002', CURRENT_DATE - INTERVAL '35 days', 50000.00, 'salary',    'Acme Corp Payroll',        'เงินเดือน'),
     -- Food (last 30 days, ~12 entries totalling ~5,640)
     ('A1002', CURRENT_DATE - INTERVAL '1 day',    -180.00, 'food',      'After You',          'ของหวาน'),
     ('A1002', CURRENT_DATE - INTERVAL '3 days',   -420.00, 'food',      'MK Restaurant',      'มื้อเย็น'),
@@ -30,7 +30,7 @@ INSERT INTO transactions (account_id, txn_date, amount, category, merchant, desc
     ('A1002', CURRENT_DATE - INTERVAL '11 days',  -450.00, 'utility',   'MWA',                'ค่าน้ำ'),
     ('A1002', CURRENT_DATE - INTERVAL '13 days',  -899.00, 'utility',   'AIS',                'ค่ามือถือ'),
     -- Investment
-    ('A1002', CURRENT_DATE - INTERVAL '4 days',  -5000.00, 'investment','SCB Asset',          'ซื้อกองทุน SCBSET')
+    ('A1002', CURRENT_DATE - INTERVAL '4 days',  -5000.00, 'investment','Asia Asset Mgmt',    'ซื้อกองทุน SET50')
 ON CONFLICT DO NOTHING;
 
 -- Recompute checking-account balance from synthesized transactions

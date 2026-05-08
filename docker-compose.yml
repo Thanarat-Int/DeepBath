@@ -1,6 +1,10 @@
 # ============================================================================
-#  AutoX-SCB AI · Local development stack
+#  DeepBaht · Local development stack
 # ----------------------------------------------------------------------------
+#  `name:` overrides the auto-detected project name (which would otherwise
+#  derive from the parent folder), so volumes/networks are prefixed
+#  `deepbaht_…` instead of `autox-scb-ai_…`.
+#
 #  Services:
 #    - postgres      Postgres 16 with pgvector (RAG + transactions in one DB)
 #    - langfuse-db   Dedicated Postgres for LangFuse (keeps app data isolated)
@@ -10,22 +14,27 @@
 #    - frontend      Next.js 15 chat UI (added Day 3)
 #  Bring up:  docker compose up --build
 # ============================================================================
+name: deepbaht
+
 services:
   # ---------------------------------------------------------------- Postgres
+  # Host port 4432 (NOT 5432) so it doesn't clash with other local Postgres
+  # instances. Container port stays 5432 — services on the same Docker network
+  # still reach it via `postgres:5432`.
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: autox-postgres
+    container_name: deepbaht-postgres
     environment:
-      POSTGRES_USER: autox
-      POSTGRES_PASSWORD: autox_dev
-      POSTGRES_DB: autox
+      POSTGRES_USER: deepbaht
+      POSTGRES_PASSWORD: deepbaht_dev
+      POSTGRES_DB: deepbaht
     ports:
-      - "5432:5432"
+      - "4432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./data/seed:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U autox -d autox"]
+      test: ["CMD-SHELL", "pg_isready -U deepbaht -d deepbaht"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -33,7 +42,7 @@ services:
   # ---------------------------------------------------------------- LangFuse DB
   langfuse-db:
     image: postgres:16-alpine
-    container_name: autox-langfuse-db
+    container_name: deepbaht-langfuse-db
     environment:
       POSTGRES_USER: langfuse
       POSTGRES_PASSWORD: langfuse_dev
@@ -49,25 +58,25 @@ services:
   # ---------------------------------------------------------------- LangFuse UI
   langfuse:
     image: langfuse/langfuse:2
-    container_name: autox-langfuse
+    container_name: deepbaht-langfuse
     depends_on:
       langfuse-db:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://langfuse:langfuse_dev@langfuse-db:5432/langfuse
-      NEXTAUTH_URL: http://localhost:3001
+      NEXTAUTH_URL: http://localhost:4002
       NEXTAUTH_SECRET: dev-secret-change-in-prod
       SALT: dev-salt-change-in-prod
       TELEMETRY_ENABLED: "false"
     ports:
-      - "3001:3000"
+      - "4002:3000"
 
   # ---------------------------------------------------------------- MCP server
   mcp-server:
     build: ./mcp-server
-    container_name: autox-mcp
+    container_name: deepbaht-mcp
     ports:
-      - "8765:8765"
+      - "4765:8765"
     environment:
       MCP_HOST: 0.0.0.0
       MCP_PORT: 8765
@@ -78,13 +87,14 @@ services:
   # ---------------------------------------------------------------- Backend
   backend:
     build: ./backend
-    container_name: autox-backend
+    container_name: deepbaht-backend
     ports:
-      - "8000:8000"
+      - "4000:8000"
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://autox:autox_dev@postgres:5432/autox
+      DATABASE_URL: postgresql+asyncpg://deepbaht:deepbaht_dev@postgres:5432/deepbaht
+      DATABASE_URL_RO: postgresql+asyncpg://deepbaht_ro:deepbaht_ro_dev@postgres:5432/deepbaht
       MCP_SERVER_URL: http://mcp-server:8765
       LANGFUSE_HOST: http://langfuse:3000
     volumes:
@@ -100,11 +110,11 @@ services:
   # ---------------------------------------------------------------- Frontend (Day 3)
   # frontend:
   #   build: ./frontend
-  #   container_name: autox-frontend
+  #   container_name: deepbaht-frontend
   #   ports:
-  #     - "3000:3000"
+  #     - "4001:3000"
   #   environment:
-  #     NEXT_PUBLIC_API_URL: http://localhost:8000
+  #     NEXT_PUBLIC_API_URL: http://localhost:4000
   #   depends_on:
   #     - backend
 

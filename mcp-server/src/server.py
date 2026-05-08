@@ -27,7 +27,7 @@ from mcp.types import Tool
 
 # ──────────────────────────────────────────────────────────────────────────────
 
-server: Server = Server("autox-banking-mcp")
+server: Server = Server("deepbaht-banking-mcp")
 
 
 # ─── Tool: get_balance ────────────────────────────────────────────────────────

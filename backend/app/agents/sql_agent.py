@@ -34,7 +34,7 @@ log = get_logger(__name__)
 # ─── Step 1: NL → SQL ────────────────────────────────────────────────────────
 
 
-GEN_SQL_SYSTEM = """คุณคือ Text-to-SQL agent ของระบบธนาคาร SCB
+GEN_SQL_SYSTEM = """คุณคือ Text-to-SQL agent ของ DeepBaht (ผู้ช่วย AI ด้านการเงินส่วนบุคคล)
 หน้าที่ของคุณคือแปลคำถามของลูกค้าเป็น **PostgreSQL SELECT statement** เดียว
 ตาม schema และข้อบังคับด้านล่าง คืนค่ากลับเป็น JSON ตาม schema เท่านั้น
 อย่ามี markdown code-fence หรือคำอธิบายเพิ่มเติม

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # ─────────────────────────────────────────────────────────────────────────────
-#  AutoX-SCB AI · Backend Dockerfile (multi-stage, slim production image)
+#  DeepBaht · Backend Dockerfile (multi-stage, slim production image)
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ──────────────── Stage 1: build dependencies ────────────────────────────────
@@ -46,9 +46,9 @@ COPY app ./app
 COPY scripts ./scripts
 
 # Non-root user
-RUN useradd --create-home --shell /bin/bash autox && \
-    chown -R autox:autox /app
-USER autox
+RUN useradd --create-home --shell /bin/bash deepbaht && \
+    chown -R deepbaht:deepbaht /app
+USER deepbaht
 
 EXPOSE 8000
 

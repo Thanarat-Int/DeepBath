@@ -1,7 +1,7 @@
 [project]
-name = "autox-mcp"
+name = "deepbaht-mcp"
 version = "0.1.0"
-description = "AutoX-SCB AI · Banking MCP server (mock transfers, balance, market data)"
+description = "DeepBaht · Banking MCP server (mock transfers, balance, market data)"
 requires-python = ">=3.11"
 dependencies = [
   "mcp>=1.1",

@@ -1,7 +1,7 @@
 [project]
-name = "autox-backend"
+name = "deepbaht-backend"
 version = "0.1.0"
-description = "AutoX-SCB AI · multi-agent backend (FastAPI + LangGraph + Typhoon)"
+description = "DeepBaht · multi-agent personal-finance backend (FastAPI + LangGraph + Typhoon)"
 requires-python = ">=3.11"
 dependencies = [
   # ── Web ────────────────────────────────────────

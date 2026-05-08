@@ -60,7 +60,8 @@ SUPERVISOR_PROMPT = ChatPromptTemplate.from_messages(
     [
         SystemMessage(
             content=(
-                "คุณคือ Supervisor ของระบบ Multi-Agent ของธนาคาร SCB. "
+                "คุณคือ Supervisor ของ DeepBaht ระบบผู้ช่วย Multi-Agent "
+                "ด้านการเงินส่วนบุคคล. "
                 "หน้าที่ของคุณคือเลือก agent ที่เหมาะสมที่สุดสำหรับคำถามของลูกค้า:\n"
                 "- 'rag'      : คำถามเชิงนโยบาย ค่าธรรมเนียม เงื่อนไขผลิตภัณฑ์ "
                 "(ค้นจากเอกสาร policy)\n"

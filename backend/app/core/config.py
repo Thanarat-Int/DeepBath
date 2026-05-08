@@ -24,10 +24,10 @@ class Settings(BaseSettings):
     )
 
     # ── Application ──────────────────────────────────────────────────────────
-    app_name: str = "AutoX-SCB-AI"
+    app_name: str = "DeepBaht"
     app_env: Literal["development", "staging", "production"] = "development"
     log_level: str = "INFO"
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:4001"])
 
     # ── Typhoon (primary LLM) ────────────────────────────────────────────────
     # Free tier rate limits (per https://docs.opentyphoon.ai/en/rate-limits/):
@@ -43,18 +43,20 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1:8b"
 
     # ── Database ─────────────────────────────────────────────────────────────
-    database_url: str = "postgresql+asyncpg://autox:autox_dev@localhost:5432/autox"
+    database_url: str = "postgresql+asyncpg://deepbaht:deepbaht_dev@localhost:4432/deepbaht"
     # Read-only role for the Text-to-SQL agent (least privilege).
-    database_url_ro: str = "postgresql+asyncpg://autox_ro:autox_ro_dev@localhost:5432/autox"
+    database_url_ro: str = (
+        "postgresql+asyncpg://deepbaht_ro:deepbaht_ro_dev@localhost:4432/deepbaht"
+    )
 
     # Demo authentication shortcut — in production, scope from session token.
     demo_customer_id: str = "C0001"
 
     # ── MCP ──────────────────────────────────────────────────────────────────
-    mcp_server_url: str = "http://localhost:8765"
+    mcp_server_url: str = "http://localhost:4765"
 
     # ── LangFuse ─────────────────────────────────────────────────────────────
-    langfuse_host: str = "http://localhost:3001"
+    langfuse_host: str = "http://localhost:4002"
     langfuse_public_key: str = ""
     langfuse_secret_key: SecretStr = SecretStr("")
 

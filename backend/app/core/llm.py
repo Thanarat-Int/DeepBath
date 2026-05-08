@@ -1,8 +1,8 @@
 """LLM client factory — Typhoon as primary, Ollama as offline fallback.
 
-Typhoon (SCB 10X) exposes an OpenAI-compatible API, so we reuse the standard
-LangChain `ChatOpenAI` class with custom `base_url`. This means every LangChain
-/ LangGraph integration works out of the box (tool calling, structured output,
+Typhoon exposes an OpenAI-compatible API, so we reuse the standard LangChain
+`ChatOpenAI` class with a custom `base_url`. This means every LangChain /
+LangGraph integration works out of the box (tool calling, structured output,
 streaming) — no custom adapter needed.
 
 Two models are exposed because not every node in a multi-agent graph needs

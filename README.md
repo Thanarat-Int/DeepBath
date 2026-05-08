@@ -1,8 +1,13 @@
-# AutoX-SCB AI 🇹🇭🏦
+# DeepBaht 🐬💸
 
-> **Personal Finance Multi-Agent Assistant** powered by **Typhoon LLM** (SCB 10X) — an end-to-end GenAI system showcasing every capability listed in the SCB AI Engineer JD.
+> **Multi-Agent AI for Thai Personal Finance** — a platform-agnostic GenAI
+> assistant that can answer questions over policy documents (RAG), reason
+> over a customer's transactions (Text-to-SQL), and take actions through a
+> Model Context Protocol server. Built around **Typhoon** (Thai-native LLM)
+> with a deliberate, JD-driven architecture covering the full GenAI
+> engineering surface.
 
-[![CI](https://github.com/USER/AutoX-Scb-AI/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/USER/deepbaht/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11+-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![LangGraph](https://img.shields.io/badge/LangGraph-0.2-green)
@@ -12,14 +17,17 @@
 
 ## ✨ Why this project?
 
-This project is a deliberate, JD-driven demonstration of **end-to-end GenAI engineering** for a Thai banking context. Every architectural choice maps directly to a requirement in the role:
+A deliberate, requirement-driven demonstration of **end-to-end GenAI
+engineering** for a Thai personal-finance use case. Every architectural
+choice maps directly to a capability a senior AI Engineer is expected to
+own:
 
-| JD Requirement | Implementation |
+| Capability | Implementation |
 |---|---|
 | End-to-End GenAI | Next.js → FastAPI → LangGraph → Postgres/pgvector → MCP, all containerised |
 | Multi-Agent Orchestration | **LangGraph** supervisor pattern: `Supervisor → {RAG, SQL, MCP, Advisor}` |
 | LLM Strategy | **Typhoon v2.5-30b** (chat) + **Typhoon v2.1-12b** (fast routing) — both via free OpenTyphoon API |
-| Context Engineering | **RAG** (LlamaIndex + bge-m3 + pgvector) · **Text-to-SQL** · **MCP** server |
+| Context Engineering | **RAG** (bge-m3 + pgvector) · **Text-to-SQL** · **MCP** server |
 | Cloud Architecture | Docker Compose for local; deploy-ready for GCP Cloud Run / EKS |
 | Monitoring & Guardrails | **LangFuse** self-hosted tracing · **Guardrails AI** (PII, jailbreak, hallucination) |
 | App Dev | **Next.js 15** + shadcn/ui frontend, **FastAPI** async backend |
@@ -50,7 +58,8 @@ This project is a deliberate, JD-driven demonstration of **end-to-end GenAI engi
                               └─────────────────┘
 ```
 
-See [Architecture.md](Architecture.md) for the full diagram and [docs/](docs/) for design notes.
+See [Architecture.md](Architecture.md) for the full diagram and
+[docs/](docs/) for design notes.
 
 ---
 
@@ -58,11 +67,26 @@ See [Architecture.md](Architecture.md) for the full diagram and [docs/](docs/) f
 
 | # | User says (TH) | Routes to | Showcases |
 |---|---|---|---|
-| 1 | "ค่าธรรมเนียมโอนเงินต่างประเทศคิดยังไง?" | RAG Agent | RAG over policy PDFs |
+| 1 | "ค่าธรรมเนียมโอนเงินต่างประเทศคิดยังไง?" | RAG Agent | RAG over policy docs with citations |
 | 2 | "เดือนที่แล้วใช้เงินกับอาหารไปเท่าไหร่?" | SQL Agent | Text-to-SQL on transactions |
-| 3 | "โอน 1,000 ให้แม่" | MCP Agent | MCP tool invocation |
+| 3 | "โอน 1,000 ให้แม่" | MCP Agent | MCP tool invocation (mock) |
 | 4 | "เงินเดือน 50K ลงทุนอะไรดี?" | Supervisor → multi-step | Multi-agent reasoning |
 | 5 | 🎤 *(speaks in Thai)* | Typhoon ASR → flow | Voice-first UX |
+
+---
+
+## 🔌 Local Ports
+
+This project deliberately uses the **4xxx range** so it doesn't clash with
+other local services:
+
+| Port | Service | URL |
+|------|---------|-----|
+| **4000** | Backend (FastAPI) | http://localhost:4000 · http://localhost:4000/docs |
+| **4001** | Frontend (Next.js, Day 3) | http://localhost:4001 |
+| **4002** | LangFuse Dashboard | http://localhost:4002 |
+| **4432** | Postgres + pgvector | `localhost:4432` |
+| **4765** | MCP Server | http://localhost:4765 |
 
 ---
 
@@ -77,9 +101,9 @@ cp backend/.env.example backend/.env
 docker compose up --build
 
 # 3. Open the app
-open http://localhost:3000          # Next.js UI
-open http://localhost:8000/docs     # FastAPI Swagger
-open http://localhost:3001          # LangFuse dashboard
+open http://localhost:4001          # Next.js UI
+open http://localhost:4000/docs     # FastAPI Swagger
+open http://localhost:4002          # LangFuse dashboard
 ```
 
 ---
@@ -87,7 +111,7 @@ open http://localhost:3001          # LangFuse dashboard
 ## 📁 Project Structure
 
 ```
-AutoX-Scb-AI/
+deepbaht/
 ├── backend/             # FastAPI + LangGraph multi-agent system
 │   ├── app/
 │   │   ├── agents/      # LangGraph supervisor + worker agents
@@ -101,8 +125,8 @@ AutoX-Scb-AI/
 ├── frontend/            # Next.js 15 chat UI
 ├── mcp-server/          # Custom Banking MCP server (transfers, balance, market)
 ├── data/
-│   ├── policies/        # Sample SCB policy PDFs for RAG
-│   └── seed/            # Postgres seed (transactions, users)
+│   ├── policies/        # Sample policy documents for RAG
+│   └── seed/            # Postgres seed (transactions, users, RO role)
 ├── docs/                # Architecture, demo script, slide deck
 ├── .github/workflows/   # CI pipeline
 └── docker-compose.yml
@@ -112,12 +136,13 @@ AutoX-Scb-AI/
 
 ## 🛠️ Tech Stack Detail
 
-**LLM & AI**: Typhoon 2 (chat/instruct) · Typhoon ASR (Thai speech) · bge-m3 (embeddings) · LangChain · LangGraph · LlamaIndex
-**Backend**: FastAPI · Pydantic v2 · SQLAlchemy 2 · asyncpg · Alembic
+**LLM & AI**: Typhoon v2.5-30b (chat) · Typhoon v2.1-12b (fast) · Typhoon ASR
+(Thai speech) · bge-m3 (embeddings) · LangChain · LangGraph
+**Backend**: FastAPI · Pydantic v2 · SQLAlchemy 2 · asyncpg · Alembic · sqlglot
 **Frontend**: Next.js 15 (App Router) · React 19 · shadcn/ui · TanStack Query
 **Data**: PostgreSQL 16 + pgvector · Redis (session)
 **Observability**: LangFuse · OpenTelemetry · structlog
-**Safety**: Guardrails AI · custom Thai PII regex
+**Safety**: Guardrails AI · Presidio · custom Thai PII regex
 **Infra**: Docker · Docker Compose · GitHub Actions
 
 ---
@@ -131,12 +156,12 @@ AutoX-Scb-AI/
 ### Defense-in-depth highlights (Day 1)
 
 - **RAG**: cite-or-refuse system prompt; bge-m3 multilingual embeddings; HNSW index
-- **Text-to-SQL**: two-layer safety — `sqlglot` AST validator + Postgres `autox_ro` role with `SELECT`-only privileges; query is **shown back** to the user for trust
+- **Text-to-SQL**: two-layer safety — `sqlglot` AST validator + Postgres `deepbaht_ro` role with `SELECT`-only privileges; query is **shown back** to the user for trust
 
 ---
 
 ## 📝 License
 
-MIT — built as a portfolio project for an SCB AI Engineer interview.
+MIT — built as a portfolio project for a Senior AI Engineer interview.
 
 **Author**: Thanarat · engineersirigpt@gmail.com

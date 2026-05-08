@@ -1,16 +1,17 @@
-# Demo Script — AutoX-SCB AI Interview Presentation
+# Demo Script — DeepBaht Interview Presentation
 
-> ใช้สำหรับการนำเสนอวันสัมภาษณ์ที่ SCB ความยาว ~12 นาที + Q&A
-> โทน: confident, technical, business-aware
+> ใช้สำหรับการนำเสนอวันสัมภาษณ์ ความยาว ~12 นาที + Q&A
+> โทน: confident, technical, business-aware, **product-minded**
 
 ---
 
 ## 1. Hook (30s)
 
 > "สวัสดีครับ ผมธนรัตน์ ในช่วง 3 วันที่ผ่านมาผมสร้างระบบที่ชื่อว่า
-> **AutoX-SCB AI** ขึ้นมาเป็น Personal Finance Multi-Agent Assistant
-> ที่ใช้ **Typhoon LLM ของ SCB 10X** เป็นแกนหลัก และครอบคลุมทุก
-> requirement ใน JD ของตำแหน่งนี้ครับ"
+> **DeepBaht** ขึ้นมาเป็น Multi-Agent AI Assistant ด้านการเงิน
+> ส่วนบุคคลภาษาไทย โดยตั้งใจให้เป็น **platform-agnostic** —
+> ทำงานได้บน data ของธนาคารใดก็ได้ — และครอบคลุมทุก capability
+> ใน JD ของตำแหน่งนี้ครับ"
 
 → เปิดสไลด์ "JD requirement ↔ implementation matrix"
 
@@ -23,7 +24,7 @@
 > 2. อยากดูยอดใช้จ่ายแต่ต้อง export statement เอง
 > 3. การให้คำปรึกษาการลงทุน scale ไม่ได้
 >
-> ระบบนี้ตอบโจทย์ทั้ง 3 ผ่าน Multi-Agent ตัวเดียวที่รับคำสั่งเป็น
+> DeepBaht ตอบโจทย์ทั้ง 3 ผ่าน Multi-Agent ตัวเดียวที่รับคำสั่งเป็น
 > ภาษาไทย รองรับเสียง และทำ action ได้
 
 ---
@@ -43,7 +44,7 @@
 |---|---|---|
 | ค่าธรรมเนียมโอน USD ไป US? | Type | RAG (เปิด LangFuse trace) |
 | เดือนนี้ใช้กับอาหารเท่าไหร่? | Type | Text-to-SQL (โชว์ generated SQL) |
-| โอน 500 ให้บัญชีแม่ A3001 | Type | MCP tool call |
+| โอน 500 ให้บัญชี A3001 | Type | MCP tool call |
 | ลงทุนยังไงดีรับเงิน 50K | 🎤 Voice | Typhoon ASR → Advisor → MCP (FX/quote) |
 
 ทุก scenario โชว์ LangFuse trace + agent_path ใน UI
@@ -52,11 +53,12 @@
 
 ## 5. Engineering highlights (2 min)
 
-1. **Typhoon-first** — ภาษาไทยดีกว่า GPT-4o ในหลาย benchmark + cost น้อยกว่า
-2. **Guardrails ทุกชั้น** — input PII (Presidio + Thai regex) → routing classifier → output validator
-3. **Observability** — LangFuse traces ทุก node + structured logs + OpenTelemetry
-4. **Cost control** — fast model (8B) สำหรับ routing, chat model (70B) สำหรับ reasoning เท่านั้น
-5. **Testable** — pytest + httpx async client + fixtures สำหรับ stubbed Typhoon
+1. **Typhoon-first** — ภาษาไทยดีกว่า GPT-4o ในหลาย benchmark + cost น้อยกว่า + sovereign data
+2. **Defense-in-depth** — Text-to-SQL มี 2 ชั้น: sqlglot AST validator + Postgres read-only role
+3. **Cite-or-refuse RAG** — ป้องกัน hallucinated banking policy (risk #1 ในระบบนี้)
+4. **Observability** — LangFuse traces ทุก node + structured logs + OpenTelemetry
+5. **Cost control** — fast model (12B) สำหรับ routing, chat (30B) สำหรับ reasoning เท่านั้น
+6. **Testable** — 21 unit tests รันได้ใน <1 วินาที (no DB / no LLM mocks needed)
 
 ---
 
@@ -67,6 +69,7 @@
 - Add Redis-backed short-term memory + LangGraph checkpointer
 - Canary deploy via GitHub Actions → GKE
 - A/B test prompts via LangFuse experiments
+- Specialise per-bank: ingest policy corpus, integrate core-banking API
 
 ---
 
@@ -74,8 +77,9 @@
 
 | คำถามที่อาจโดน | คำตอบสั้น |
 |---|---|
-| ทำไมเลือก Typhoon ไม่ใช่ GPT-4o? | คุณภาพไทย, cost, sovereign data, และเป็น stack ของ SCB 10X |
-| Hallucination จัดการยังไง? | RAG + citation enforcement + Guardrails output validator + low temperature |
+| ทำไมเลือก Typhoon ไม่ใช่ GPT-4o? | คุณภาพไทย, cost, sovereign data, ecosystem ไทย |
+| Hallucination จัดการยังไง? | RAG + citation enforcement + cite-or-refuse prompt + low temperature |
 | ถ้า MCP server ล่ม? | Circuit breaker (tenacity) + graceful fallback + supervisor reroute |
 | Multi-tenant? | Session id → Postgres RLS + LangFuse user property |
-| ใช้กับ regulated data ยังไง? | Self-host Typhoon on-prem (SCB cloud), Presidio masks PII before logging |
+| ใช้กับ regulated data ยังไง? | Self-host LLM on-prem, Presidio masks PII before logging, RO role for SQL |
+| ทำไมไม่ตั้งชื่อตามธนาคาร? | DeepBaht ออกแบบเป็น **platform** — ทำงานบน data ของธนาคารใดก็ได้ ถ้า join จะ specialise ตาม policy/system จริง |

@@ -4,8 +4,8 @@
 with 1024-dim vectors — a deliberate choice over OpenAI text-embedding-3 here
 because:
 
-  1. **Sovereign data**: SCB compliance prefers embeddings computed in our
-     own runtime over third-party API calls.
+  1. **Sovereign data**: Thai-banking compliance prefers embeddings computed
+     in our own runtime over third-party API calls.
   2. **Thai quality**: bge-m3 outperforms OpenAI ada/3-small on Thai
      retrieval benchmarks (per the C-MTEB and MIRACL leaderboards).
   3. **Cost**: zero per-call cost once the model is loaded.

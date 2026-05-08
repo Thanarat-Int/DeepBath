@@ -5,7 +5,7 @@ A two-layer defense:
      reject anything that is not a single read-only `SELECT` against an
      allow-listed set of tables. Also enforces a `LIMIT` to keep result
      sets bounded.
-  2. **Database role** — the agent connects as `autox_ro` which has only
+  2. **Database role** — the agent connects as `deepbaht_ro` which has only
      SELECT privileges. Even if an exploit slips past layer 1, Postgres
      itself rejects writes (see `data/seed/04-readonly-role.sql`).
 

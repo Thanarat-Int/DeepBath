@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
---  AutoX-SCB AI · Postgres seed schema
+--  DeepBaht · Postgres seed schema
 --  Auto-applied by the Postgres container via /docker-entrypoint-initdb.d
 -- ─────────────────────────────────────────────────────────────────────────────
 
