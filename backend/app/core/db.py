@@ -21,6 +21,7 @@ from app.core.config import get_settings
 
 @lru_cache(maxsize=1)
 def get_engine() -> AsyncEngine:
+    """Owner-role engine — full CRUD. Used by RAG ingest and supervisor logic."""
     settings = get_settings()
     return create_async_engine(
         settings.database_url,
@@ -32,8 +33,31 @@ def get_engine() -> AsyncEngine:
 
 
 @lru_cache(maxsize=1)
+def get_engine_ro() -> AsyncEngine:
+    """Read-only engine — used **exclusively** by the Text-to-SQL agent.
+
+    Even if the SQL validator is bypassed by a crafted prompt, Postgres
+    itself will reject any non-SELECT statement because the role lacks the
+    INSERT/UPDATE/DELETE/TRUNCATE privileges. This is defense-in-depth.
+    """
+    settings = get_settings()
+    return create_async_engine(
+        settings.database_url_ro,
+        pool_size=5,
+        max_overflow=5,
+        pool_pre_ping=True,
+        echo=False,
+    )
+
+
+@lru_cache(maxsize=1)
 def get_session_factory() -> async_sessionmaker[AsyncSession]:
     return async_sessionmaker(get_engine(), expire_on_commit=False, class_=AsyncSession)
+
+
+@lru_cache(maxsize=1)
+def get_session_factory_ro() -> async_sessionmaker[AsyncSession]:
+    return async_sessionmaker(get_engine_ro(), expire_on_commit=False, class_=AsyncSession)
 
 
 async def session_dep() -> AsyncIterator[AsyncSession]:

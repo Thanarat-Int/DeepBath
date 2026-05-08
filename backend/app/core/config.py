@@ -44,6 +44,11 @@ class Settings(BaseSettings):
 
     # ── Database ─────────────────────────────────────────────────────────────
     database_url: str = "postgresql+asyncpg://autox:autox_dev@localhost:5432/autox"
+    # Read-only role for the Text-to-SQL agent (least privilege).
+    database_url_ro: str = "postgresql+asyncpg://autox_ro:autox_ro_dev@localhost:5432/autox"
+
+    # Demo authentication shortcut — in production, scope from session token.
+    demo_customer_id: str = "C0001"
 
     # ── MCP ──────────────────────────────────────────────────────────────────
     mcp_server_url: str = "http://localhost:8765"

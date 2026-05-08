@@ -25,6 +25,7 @@ dependencies = [
   "langgraph>=0.2.50",
   "sentence-transformers>=3.3",     # bge-m3 multilingual embedder
   "numpy>=1.26",
+  "sqlglot>=25.0",                  # SQL AST validator for the Text-to-SQL agent
 
   # ── MCP ────────────────────────────────────────
   "mcp>=1.1",

@@ -35,6 +35,7 @@ from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
 from app.agents.rag_agent import rag_node as _real_rag_node
+from app.agents.sql_agent import sql_node as _real_sql_node
 from app.agents.state import AgentState, Route
 from app.core.llm import get_llm
 from app.core.logging import get_logger
@@ -121,7 +122,8 @@ async def rag_node(state: AgentState) -> dict:
 
 
 async def sql_node(state: AgentState) -> dict:
-    return await _stub_worker("sql", state)
+    """Real Text-to-SQL worker — see app.agents.sql_agent."""
+    return await _real_sql_node(state)
 
 
 async def mcp_node(state: AgentState) -> dict:

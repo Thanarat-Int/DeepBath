@@ -1,0 +1,30 @@
+-- ─────────────────────────────────────────────────────────────────────────────
+--  Read-only role for the Text-to-SQL agent
+--  --------------------------------------------------------------------------
+--  Defense-in-depth: even if the agent's sqlglot validator is bypassed by a
+--  prompt-injection or code bug, the database itself will refuse any write.
+--  Banking principle of least privilege.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'autox_ro') THEN
+        CREATE ROLE autox_ro WITH LOGIN PASSWORD 'autox_ro_dev';
+    END IF;
+END $$;
+
+-- Strip any inherited write privileges first (in case the role pre-existed)
+REVOKE ALL ON SCHEMA public FROM autox_ro;
+REVOKE ALL ON ALL TABLES    IN SCHEMA public FROM autox_ro;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM autox_ro;
+
+-- Grant only what is needed
+GRANT  CONNECT ON DATABASE autox TO autox_ro;
+GRANT  USAGE   ON SCHEMA   public TO autox_ro;
+GRANT  SELECT  ON ALL TABLES IN SCHEMA public TO autox_ro;
+
+-- Apply to future tables too
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO autox_ro;
+
+-- Belt-and-braces: explicitly forbid future write privileges by default
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLES FROM autox_ro;

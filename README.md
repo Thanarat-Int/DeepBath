@@ -124,9 +124,14 @@ AutoX-Scb-AI/
 
 ## 📅 Build Timeline (3-day sprint)
 
-- **Day 1** — Backend skeleton, LangGraph supervisor, RAG + SQL agents, seed data
-- **Day 2** — MCP server, Guardrails, LangFuse, Typhoon ASR
+- **Day 1** ✅ — Backend skeleton, LangGraph supervisor, **RAG + Text-to-SQL agents**, seed data
+- **Day 2** — MCP server (HTTP transport), Guardrails (Presidio), LangFuse, Typhoon ASR
 - **Day 3** — Next.js UI, CI/CD, end-to-end Docker test, slide deck, rehearsal
+
+### Defense-in-depth highlights (Day 1)
+
+- **RAG**: cite-or-refuse system prompt; bge-m3 multilingual embeddings; HNSW index
+- **Text-to-SQL**: two-layer safety — `sqlglot` AST validator + Postgres `autox_ro` role with `SELECT`-only privileges; query is **shown back** to the user for trust
 
 ---
 
