@@ -122,6 +122,9 @@ open http://localhost:4002          # LangFuse dashboard
 **Observability**: LangFuse (OTEL) · structlog
 **Safety**: custom Thai-PII regex + Mod-11 ID validator · jailbreak heuristic · DB-level RO role
 **Infra**: Docker · Docker Compose · multi-stage Dockerfiles
+**CI/CD**: GitHub Actions (lint + test + build + publish to GHCR)
+
+> 📚 Full breakdown with "why we picked it" rationale: [docs/TECH_STACK.md](docs/TECH_STACK.md)
 
 ---
 
