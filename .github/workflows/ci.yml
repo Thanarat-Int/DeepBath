@@ -65,12 +65,18 @@ jobs:
         # Skip torch/transformers/sentence-transformers (~3 GB, ~5 min) —
         # the unit tests under test_rag_chunker / test_sql_safety / test_guards
         # only need a thin slice of the backend deps.
+        # Note: sqlalchemy + numpy are required because importing
+        # app.services.rag (where the chunker lives) pulls in vector_store
+        # and embeddings at module load time. Refactor TODO: extract pure
+        # chunker into its own module so this couplings goes away.
         run: |
           pip install \
             "pytest>=8.3" "pytest-asyncio>=0.24" \
             "pydantic>=2.9" "pydantic-settings>=2.6" \
             "fastapi>=0.115" \
             "sqlglot>=25.0" \
+            "sqlalchemy>=2.0" \
+            "numpy>=1.26" \
             "structlog>=24.4"
 
       - name: Run unit tests
