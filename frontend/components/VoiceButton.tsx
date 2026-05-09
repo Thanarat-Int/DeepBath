@@ -92,8 +92,8 @@ export function VoiceButton({
           status === "recording"
             ? "bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/40"
             : status === "uploading"
-              ? "bg-zinc-800 text-zinc-500"
-              : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-emerald-300"
+              ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+              : "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-emerald-600 dark:hover:text-emerald-300"
         } disabled:opacity-30 disabled:cursor-not-allowed`}
       >
         {status === "uploading" ? (

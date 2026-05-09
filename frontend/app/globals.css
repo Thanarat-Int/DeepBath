@@ -1,19 +1,22 @@
 @import "tailwindcss";
 
+/* Tailwind v4 uses class-based dark mode out of the box when this is set. */
+@variant dark (&:where(.dark, .dark *));
+
 @theme inline {
-  --color-background: #09090b;        /* zinc-950 */
-  --color-foreground: #fafafa;        /* zinc-50  */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }
 
-html, body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+/* Smooth theme transition for the major surface colors only — too many
+   transitioning properties causes jank, so we keep this short list. */
+html,
+body {
+  transition: background-color 200ms ease, color 200ms ease;
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Tailwind line-clamp uses the @container query plugin — re-declare for v4 */
+/* Tailwind line-clamp shortcuts (v4 doesn't ship these as utilities). */
 .line-clamp-1 {
   display: -webkit-box;
   -webkit-box-orient: vertical;

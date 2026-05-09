@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans_Thai, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-// Use IBM Plex Sans Thai for proper Thai rendering — Geist's Latin-only
-// glyphs fall back to system fonts which renders inconsistently across
-// Windows/macOS/Linux. JetBrains Mono for code blocks (SQL traces, etc.).
 const sansThai = IBM_Plex_Sans_Thai({
   variable: "--font-sans",
   subsets: ["latin", "thai"],
@@ -22,6 +19,19 @@ export const metadata: Metadata = {
     "ผู้ช่วย AI ด้านการเงินส่วนบุคคล รองรับภาษาไทย ทำงานร่วมกับ RAG, Text-to-SQL, MCP",
 };
 
+// Inline script that runs BEFORE React hydrates, so the user never sees a
+// flash-of-wrong-theme. Reads localStorage; falls back to system preference.
+const themeBootstrap = `
+(function(){
+  try {
+    var saved = localStorage.getItem('theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var dark = saved ? saved === 'dark' : prefersDark;
+    if (dark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,9 +40,17 @@ export default function RootLayout({
   return (
     <html
       lang="th"
-      className={`${sansThai.variable} ${mono.variable} h-full antialiased dark`}
+      className={`${sansThai.variable} ${mono.variable} h-full antialiased`}
+      // suppressHydrationWarning because the inline script may flip the
+      // `dark` class before React mounts — that's intentional.
+      suppressHydrationWarning
     >
-      <body className="min-h-full bg-zinc-950 text-zinc-100">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
+      <body className="min-h-full bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+        {children}
+      </body>
     </html>
   );
 }
