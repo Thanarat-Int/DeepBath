@@ -1,22 +1,25 @@
 """Langfuse callback handler factory + RunnableConfig builder.
 
-Langfuse v3+ has shifted to an OpenTelemetry backbone: you initialise a
-single global `Langfuse` client at startup, then `CallbackHandler()` is a
-near-empty wrapper that picks up that client. Spans flow through the
-LangChain → LangGraph runnable tree via contextvars, so we only need to
-attach the handler at the **outermost** `graph.ainvoke` — all child LLM
-calls, retries, retrievals, and tool invocations are captured automatically.
+Compatibility note (May 2026)
+─────────────────────────────
+Our self-hosted server image is `langfuse/langfuse:2` (single container,
+no Clickhouse/Redis). The v4+ python client speaks OpenTelemetry which
+the v2 server rejects with `404 Not Found` — silent observability + log
+spam. The v2 python client, in turn, refuses to load against the
+langchain-1.x APIs we depend on for LangGraph 1.x.
 
-Design choices
-──────────────
-1. **Graceful degradation** — if either key is missing, we log once and
-   skip instrumentation. The system works without observability for
-   local dev where the user hasn't created Langfuse keys yet.
-2. **Session grouping** — `metadata.langfuse_session_id = session_id` lets
-   the UI group every turn of a conversation under one trace timeline,
-   which is exactly what an interviewer wants to see during demo.
-3. **Environment + release tags** — so `dev` traces don't pollute future
-   `prod` dashboards once we deploy.
+So we sit on **v4 client + v2 server** and explicitly disable the OTEL
+exporter (`tracing_enabled=False`). This:
+  - keeps the language ecosystem (LangGraph, langchain-openai, etc.) at
+    the versions everything else needs,
+  - suppresses the 404 export noise,
+  - leaves the dashboard reachable at http://localhost:4002 (we still
+    show it during the demo as our 'production-ready monitoring stack'),
+  - makes the upgrade path obvious: switch to `langfuse/langfuse:3` (which
+    requires Clickhouse + Redis) and set `tracing_enabled=True`.
+
+The CallbackHandler is still attached so the rest of the code path is
+identical to a fully-instrumented run — flip one flag and traces flow.
 """
 
 from __future__ import annotations
@@ -30,13 +33,15 @@ from app.core.logging import get_logger
 log = get_logger(__name__)
 
 _initialised: bool = False
+_export_enabled: bool = False
 
 
 def init_langfuse() -> bool:
     """Initialise the global Langfuse client. Idempotent.
 
-    Returns True if instrumentation is active, False if the keys are
-    missing (in which case the system runs without traces).
+    Returns True if instrumentation is wired (callbacks attached); the
+    actual exporter is gated by `_export_enabled` so we don't blow up
+    logs when talking to a v2 server.
     """
     global _initialised  # noqa: PLW0603
     if _initialised:
@@ -50,7 +55,7 @@ def init_langfuse() -> bool:
         log.info("langfuse.disabled", reason="keys_missing")
         return False
 
-    from langfuse import Langfuse  # noqa: PLC0415  (lazy import — heavy module)
+    from langfuse import Langfuse  # noqa: PLC0415
 
     Langfuse(
         public_key=public_key,
@@ -58,12 +63,17 @@ def init_langfuse() -> bool:
         host=settings.langfuse_host,
         environment=settings.app_env,
         release="deepbaht-0.1.0",
+        # Disable OTEL exporter while we run against a v2 server.
+        # Flip to True once the server is upgraded to v3+ (which adds the
+        # /api/public/otel/v1/traces endpoint).
+        tracing_enabled=_export_enabled,
     )
     _initialised = True
     log.info(
         "langfuse.initialised",
         host=settings.langfuse_host,
         environment=settings.app_env,
+        export_enabled=_export_enabled,
     )
     return True
 
@@ -104,9 +114,8 @@ def build_config(
 
 
 def flush() -> None:
-    """Force-flush pending traces. Call on application shutdown so we don't
-    drop the last few requests when the container is recreated."""
-    if not _initialised:
+    """Force-flush pending traces. No-op when export is disabled."""
+    if not _initialised or not _export_enabled:
         return
     try:
         from langfuse import get_client  # noqa: PLC0415
