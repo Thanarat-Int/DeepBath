@@ -57,7 +57,17 @@ A platform-agnostic GenAI assistant for Thai personal finance:
 
 ## Architecture
 
-![bg right:55% 95%](architecture.png)
+```
+Next.js → FastAPI → LangGraph Supervisor
+                         │
+                ┌────────┼────────┐
+                ▼        ▼        ▼
+              [RAG]   [SQL]    [MCP]
+               │       │         │
+            pgvector  PG-RO   Banking MCP
+                      │
+                  LangFuse
+```
 
 **Supervisor pattern** routes each question to one specialist:
 
@@ -125,7 +135,17 @@ Typhoon sees it:
 
 ## Observability · LangFuse
 
-![bg right:50% 95%](langfuse.png)
+```
+[supervisor] ──▶ [rag/sql/mcp] ──▶ [finalize]
+     │               │                 │
+     └───────────────┼─────────────────┘
+                     ▼
+            ┌─────────────────┐
+            │ LangFuse trace  │
+            │ session-grouped │
+            │ + token cost    │
+            └─────────────────┘
+```
 
 Every `/chat` call ships:
 
