@@ -29,13 +29,22 @@ function newSessionId(): string {
 }
 
 export function ChatPanel() {
-  const [sessionId] = useState(() => newSessionId());
+  // sessionId is generated **after mount** (not in initial useState) so the
+  // server-side render and the client hydration agree on an empty string.
+  // Math.random() / Date.now() inside useState would otherwise produce
+  // different values on the two passes → React hydration mismatch warning.
+  const [sessionId, setSessionId] = useState("");
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [latestPath, setLatestPath] = useState<AgentName[]>([]);
   const [latestTraces, setLatestTraces] = useState<AgentTrace[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Generate the session id once, on the client, after first mount.
+  useEffect(() => {
+    setSessionId(newSessionId());
+  }, []);
 
   // Auto-scroll on new message.
   useEffect(() => {
@@ -98,7 +107,7 @@ export function ChatPanel() {
             <h1 className="text-lg font-semibold text-zinc-100">DeepBaht</h1>
             <p className="text-xs text-zinc-500">
               Multi-Agent AI for Thai Personal Finance · session{" "}
-              <span className="font-mono text-zinc-400">{sessionId}</span>
+              <span className="font-mono text-zinc-400">{sessionId || "…"}</span>
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs">
