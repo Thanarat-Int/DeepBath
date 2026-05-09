@@ -198,6 +198,6 @@ deepbaht/
 
 ## 📝 License
 
-MIT — built as a portfolio for a Senior AI Engineer interview.
+DeepX
 
-**Author**: Thanarat · engineersirigpt@gmail.com
+**Author**: Thanarat.Chue

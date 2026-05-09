@@ -5,7 +5,7 @@ class: invert
 paginate: true
 size: 16:9
 header: 'DeepBaht · Multi-Agent AI for Thai Personal Finance'
-footer: 'Thanarat · engineersirigpt@gmail.com'
+footer: 'Thanarat.Chue'
 style: |
   section { font-size: 24px; }
   h1 { color: #34d399; font-size: 1.6em; }
@@ -20,10 +20,10 @@ style: |
 # 🐬💸 DeepBaht
 ### Multi-Agent AI for Thai Personal Finance
 
-**Senior AI Engineer interview · 3-day build**
+**DeepX · 3-day build**
 
-Thanarat
-2026-05-08
+Thanarat.Chue
+2026-05-09
 
 ---
 
@@ -207,5 +207,4 @@ Not to brag — to **prove I can**:
 
 Thank you. ขอบคุณครับ 🙏
 
-**Code**: github.com/USER/deepbaht (please pre-clone — demo runs offline)
-**Email**: engineersirigpt@gmail.com
+**Code**: github.com/Thanarat-Int/DeepBath
