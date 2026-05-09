@@ -1,18 +1,25 @@
 # ─────────────────────────────────────────────────────────────────────────────
-#  DeepBaht · CI Pipeline
+#  DeepBaht · CI/CD Pipeline
 # ----------------------------------------------------------------------------
 #  Runs on every push/PR to main:
-#    1. lint  — ruff (Python style + safety rules)
-#    2. test  — pytest on the 42 unit tests that don't need DB/LLM
-#                (chunker, sql_safety, guards) — sub-second, zero deps.
-#    3. build — verify backend + mcp-server Dockerfiles build cleanly.
+#    1. lint    — ruff (Python style + safety rules)
+#    2. test    — pytest on the 42 unit tests that don't need DB/LLM
+#                  (chunker, sql_safety, guards) — sub-second, zero deps.
+#    3. build   — backend + mcp-server docker images, with GitHub
+#                  Actions cache. On `push` to main the images are
+#                  TAGGED + PUSHED to GitHub Container Registry as:
+#                    ghcr.io/<owner>/deepbaht-backend:latest
+#                    ghcr.io/<owner>/deepbaht-backend:<sha>
+#                    ghcr.io/<owner>/deepbaht-mcp:latest
+#                    ghcr.io/<owner>/deepbaht-mcp:<sha>
+#                  PRs only build (no push) — keeps the registry clean.
 #
-#  Designed for **fast feedback** (~2 min total) — heavy deps like torch/
-#  sentence-transformers are skipped in test stage; full integration tests
-#  belong in a separate nightly workflow once we add one.
+#  Designed for fast feedback (~3-4 min total) — heavy Python deps like
+#  torch are skipped in test stage; the build job re-installs them but
+#  benefits from Docker layer cache after the first run.
 # ─────────────────────────────────────────────────────────────────────────────
 
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -22,8 +29,11 @@ on:
 
 # Cancel previous runs on the same ref to save Action minutes.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: cicd-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
   # ───────────────────────────────────────────────────────────────── lint ──
@@ -89,30 +99,86 @@ jobs:
                  tests/test_guards.py \
                  -v --tb=short
 
-  # ──────────────────────────────────────────────────────────────── build ──
+  # ────────────────────────────────────────────────────────────── build/CD ──
   build:
-    name: Docker build
+    name: Build & Publish
     runs-on: ubuntu-latest
+    needs: [lint, test]   # don't waste minutes building a known-broken commit
+    permissions:
+      contents: read
+      packages: write       # required to push to ghcr.io
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build backend image (no push)
+      - name: Compute lowercase image base (GHCR requires lowercase paths)
+        id: img
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "base=${{ env.REGISTRY }}/${OWNER_LC}/deepbaht" >> $GITHUB_OUTPUT
+          echo "sha_short=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      # Only login on push to main — PRs build without pushing
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend
         uses: docker/build-push-action@v6
         with:
           context: ./backend
-          push: false
-          tags: deepbaht-backend:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ steps.img.outputs.base }}-backend:latest
+            ${{ steps.img.outputs.base }}-backend:${{ steps.img.outputs.sha_short }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
 
-      - name: Build MCP server image (no push)
+      - name: Build & push MCP server
         uses: docker/build-push-action@v6
         with:
           context: ./mcp-server
-          push: false
-          tags: deepbaht-mcp:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ steps.img.outputs.base }}-mcp:latest
+            ${{ steps.img.outputs.base }}-mcp:${{ steps.img.outputs.sha_short }}
+          cache-from: type=gha,scope=mcp
+          cache-to: type=gha,scope=mcp,mode=max
+
+      - name: Summary
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "## 🚀 Published images" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| ${{ steps.img.outputs.base }}-backend | latest, ${{ steps.img.outputs.sha_short }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ${{ steps.img.outputs.base }}-mcp | latest, ${{ steps.img.outputs.sha_short }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pull with: \`docker pull ${{ steps.img.outputs.base }}-backend:latest\`" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────── deploy ──
+  # Placeholder for the next CD step. Ship-ready pattern:
+  #
+  #   deploy-staging:
+  #     needs: build
+  #     runs-on: ubuntu-latest
+  #     environment: staging        # GitHub Environments → manual approval gate
+  #     steps:
+  #       - uses: google-github-actions/auth@v2
+  #         with:
+  #           credentials_json: ${{ secrets.GCP_SA_KEY }}
+  #       - uses: google-github-actions/deploy-cloudrun@v2
+  #         with:
+  #           service: deepbaht-backend-staging
+  #           image: ghcr.io/.../deepbaht-backend:${{ github.sha }}
+  #
+  # Skipped here because we don't have a cloud project provisioned for
+  # this 3-day demo — would add ฿80-200/month in GCP cost. See
+  # docs/SLIDES.md production-roadmap slide for the full vision.
