@@ -6,9 +6,10 @@
 > Built around **Typhoon** (Thai-native LLM) with a deliberate, JD-driven
 > architecture covering the full GenAI engineering surface.
 
+[![CI](https://github.com/Thanarat-Int/DeepBath/actions/workflows/ci.yml/badge.svg)](https://github.com/Thanarat-Int/DeepBath/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11+-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
-![LangGraph](https://img.shields.io/badge/LangGraph-0.2-green)
+![LangGraph](https://img.shields.io/badge/LangGraph-1.x-green)
 ![Typhoon](https://img.shields.io/badge/LLM-Typhoon%20v2.5--30b-emerald)
 ![Tests](https://img.shields.io/badge/tests-44%20passing-success)
 ![Docker](https://img.shields.io/badge/docker-ready-2496ED)
@@ -28,7 +29,7 @@ A deliberate, requirement-driven mapping for the Senior AI Engineer role:
 | Cloud Architecture | Docker Compose · 4xxx port range · multi-stage Dockerfiles · health-checked | [`docker-compose.yml`](docker-compose.yml) |
 | Monitoring & Guardrails | **LangFuse** self-hosted tracing · Thai PII redactor · jailbreak filter | [`monitoring/`](backend/app/monitoring/) [`guards/`](backend/app/guards/) |
 | App Dev | **Next.js 16** + Tailwind v4 + Voice button, **FastAPI** async backend | [`frontend/`](frontend/) [`backend/`](backend/) |
-| DevOps | Multi-stage Dockerfiles · Compose profile · 44 unit tests · port isolation | [`backend/Dockerfile`](backend/Dockerfile) |
+| DevOps | Multi-stage Dockerfiles · Compose profile · 44 unit tests · **GitHub Actions CI** (lint+test+build) · port isolation | [`backend/Dockerfile`](backend/Dockerfile) · [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 
 ---
 
