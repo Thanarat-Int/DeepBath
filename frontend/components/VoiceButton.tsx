@@ -73,35 +73,62 @@ export function VoiceButton({
   const click =
     status === "recording" ? stopRecording : status === "idle" ? startRecording : undefined;
 
-  const label =
+  const aria =
     status === "recording"
-      ? "หยุดอัด"
+      ? "หยุดอัดเสียง"
       : status === "uploading"
-        ? "กำลังถอดเสียง…"
-        : "พูดเป็นภาษาไทย";
-
-  const indicator =
-    status === "recording" ? "🔴" : status === "uploading" ? "⏳" : "🎤";
+        ? "กำลังถอดเสียง"
+        : "อัดเสียงภาษาไทย";
 
   return (
-    <div className="flex items-center gap-2">
+    <>
       <button
         type="button"
         onClick={click}
         disabled={disabled || status === "uploading"}
-        title={label}
-        className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${
+        title={aria}
+        aria-label={aria}
+        className={`flex items-center justify-center h-10 w-10 rounded-xl transition-colors ${
           status === "recording"
-            ? "bg-red-500 text-white animate-pulse"
-            : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
+            ? "bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/40"
+            : status === "uploading"
+              ? "bg-zinc-800 text-zinc-500"
+              : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-emerald-300"
+        } disabled:opacity-30 disabled:cursor-not-allowed`}
       >
-        <span className="mr-1">{indicator}</span>
-        {label}
+        {status === "uploading" ? (
+          <span className="text-sm">⏳</span>
+        ) : status === "recording" ? (
+          <span className="h-2.5 w-2.5 rounded-sm bg-white" />
+        ) : (
+          <MicIcon />
+        )}
       </button>
       {error ? (
-        <span className="text-xs text-red-400">⚠ {error}</span>
+        <span className="absolute right-0 -top-7 text-[10px] text-rose-400 whitespace-nowrap">
+          ⚠ {error}
+        </span>
       ) : null}
-    </div>
+    </>
+  );
+}
+
+
+function MicIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+    >
+      <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 1 0 6 0V5a3 3 0 0 0-3-3z" />
+      <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+      <line x1="12" x2="12" y1="18" y2="22" />
+    </svg>
   );
 }
