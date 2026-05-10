@@ -79,6 +79,15 @@ async def rag_node(state: AgentState) -> dict:
         ]
     )
     answer = str(response.content).strip()
+
+    # Append a human-readable sources list so [1], [2] etc. in the answer
+    # actually mean something to the user. The numbering matches exactly
+    # what `format_context` showed the LLM (1-indexed, in retrieval order),
+    # so a reply like 'see [3]' lines up with the third entry below.
+    sources_block = _format_sources(chunks)
+    if sources_block:
+        answer = f"{answer}\n\n{sources_block}"
+
     latency = int((time.perf_counter() - t0) * 1000)
 
     log.info(
@@ -94,3 +103,17 @@ async def rag_node(state: AgentState) -> dict:
         latency_ms=latency,
     )
     return {"rag_context": answer, "agent_path": ["rag"], "traces": [trace]}
+
+
+def _format_sources(chunks: list) -> str:
+    """Build a 'ที่มา' (sources) section that mirrors the [n] numbering
+    the LLM saw in <context>. We show 'doc title (ส่วนที่ N)' so two
+    chunks from the same doc are still distinguishable.
+    """
+    if not chunks:
+        return ""
+    lines = [
+        f"[{i}] {c.doc_title} (ส่วนที่ {c.chunk_index + 1})"
+        for i, c in enumerate(chunks, start=1)
+    ]
+    return "📚 **ที่มา**\n" + "\n".join(lines)
